@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>方塊社區 (BlockCommunity) - 論壇</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Minecraft', sans-serif;
+            background-image: url('https://example.com/minecraft-background.jpg'); /* 替換為你的背景圖 */
+            background-size: cover;
+            background-position: center;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-around;
+            background-color: #4CAF50; /* Minecraft草地綠色 */
+            padding: 15px;
+        }
+
+        .navbar a {
+            text-decoration: none;
+            color: white;
+            font-size: 20px;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 5px;
+            box-shadow: 0px 4px 2px -2px gray;
+        }
+
+        .navbar a:hover {
+            background-color: #555;
+        }
+
+        .content {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8); /* 透明背景 */
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 36px;
+            color: #333;
+            text-shadow: 2px 2px 5px gray;
+        }
+
+        .post-form {
+            margin-bottom: 20px;
+        }
+
+        .post-form input, .post-form textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .post-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .post-item h3 {
+            color: #4CAF50;
+        }
+
+        .post-controls {
+            margin-top: 10px;
+        }
+
+        .reply-form {
+            margin-top: 10px;
+            display: none; /* 隱藏回覆表單 */
+        }
+    </style>
+</head>
+<body>
+
+	<div class="navbar">
+    <a href="index.html">首頁</a>
+    <a href="forum.html">論壇</a>
+    <a href="servers.html">推薦伺服器</a>
+    <a href="news.html">新聞</a>
+    <a href="community.html">社群</a>
+	</div>
+
+    <!-- 內容區域 -->
+    <div class="content">
+        <h1>方塊社區論壇</h1>
+
+        <!-- 發送論壇的表單 -->
+        <div class="post-form">
+            <h2>發送你的論壇</h2>
+            <input type="text" id="username" placeholder="你的暱稱" required>
+            <textarea id="postContent" rows="4" placeholder="在這裡輸入你的論壇內容..." required></textarea>
+            <button onclick="submitPost()">提交論壇</button>
+        </div>
+
+        <!-- 已提交的論壇區域 -->
+        <div id="postList">
+            <h2>論壇帖子</h2>
+        </div>
+    </div>
+
+    <script>
+        let postCount = 0; // 用於追蹤帖子編號
+        let posts = []; // 儲存所有帖子
+
+        // 從 Local Storage 加載帖子
+        window.onload = function() {
+            const savedPosts = JSON.parse(localStorage.getItem('posts')) || [];
+            postCount = savedPosts.length;
+
+            savedPosts.forEach(post => {
+                displayPost(post.username, post.content, post.id);
+            });
+        };
+
+        function submitPost() {
+            const username = document.getElementById('username').value;
+            const postContent = document.getElementById('postContent').value;
+
+            if (username && postContent) {
+                const post = { id: postCount + 1, username, content: postContent };
+                posts.push(post);
+                localStorage.setItem('posts', JSON.stringify(posts));
+
+                displayPost(username, postContent, post.id);
+
+                // 清空表單
+                document.getElementById('username').value = '';
+                document.getElementById('postContent').value = '';
+                postCount++;
+            } else {
+                alert('請填寫所有字段！');
+            }
+        }
+
+        function displayPost(username, content, id) {
+            const postList = document.getElementById('postList');
+
+            // 創建新的帖子元素
+            const newPost = document.createElement('div');
+            newPost.classList.add('post-item');
+            newPost.innerHTML = `
+                <h3>${username} 發表的論壇 #${id}</h3>
+                <p>${content}</p>
+                <div class="post-controls">
+                    <button onclick="editPost(${id})">編輯</button>
+                    <button onclick="deletePost(${id})">刪除</button>
+                    <button onclick="toggleReply(${id})">回覆</button>
+                </div>
+                <div class="reply-form" id="reply-form-${id}">
+                    <input type="text" id="reply-username-${id}" placeholder="你的名字" required>
+                    <textarea id="reply-content-${id}" rows="2" placeholder="在這裡輸入你的回覆..." required></textarea>
+                    <button onclick="submitReply(${id})">提交回覆</button>
+                </div>
+                <div id="replies-${id}"></div>
+            `;
+
+            // 將新帖子添加到帖子列表
+            postList.appendChild(newPost);
+        }
+
+        function deletePost(id) {
+            posts = posts.filter(post => post.id !== id);
+            localStorage.setItem('posts', JSON.stringify(posts));
+            document.getElementById('postList').innerHTML = ''; // 清空列表
+            posts.forEach(post => displayPost(post.username, post.content, post.id)); // 重新顯示所有帖子
+        }
+
+        function editPost(id) {
+            const post = posts.find(post => post.id === id);
+            const newContent = prompt("編輯你的帖子:", post.content);
+            if (newContent) {
+                post.content = newContent;
+                localStorage.setItem('posts', JSON.stringify(posts));
+                document.getElementById('postList').innerHTML = ''; // 清空列表
+                posts.forEach(post => displayPost(post.username, post.content, post.id)); // 重新顯示所有帖子
+            }
+        }
+
+        function toggleReply(id) {
+            const replyForm = document.getElementById(`reply-form-${id}`);
+            replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function submitReply(postId) {
+            const replyUsername = document.getElementById(`reply-username-${postId}`).value;
+            const replyContent = document.getElementById(`reply-content-${postId}`).value;
+
+            if (replyUsername && replyContent) {
+                const repliesDiv = document.getElementById(`replies-${postId}`);
+                const replyItem = document.createElement('div');
+                replyItem.classList.add('post-item');
+                replyItem.innerHTML = `<h4>${replyUsername} 回覆:</h4><p>${replyContent}</p>`;
+                repliesDiv.appendChild(replyItem);
+
+                // 清空回覆表單
+                document.getElementById(`reply-username-${postId}`).value = '';
+                document.getElementById(`reply-content-${postId}`).value = '';
+            } else {
+                alert('請填寫所有字段！');
+            }
+        }
+    </script>
+
+</body>
+</html>
